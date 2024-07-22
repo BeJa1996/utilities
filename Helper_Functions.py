@@ -5,9 +5,13 @@ Author: Benjamin Jargow
 Last Edited: 22.07.2024
 """
 
+import numpy as np
+import pandas as pd
+from scipy.stats import probplot, norm
+
 import seaborn as sns
 import matplotlib.pyplot as plt
-import pandas as pd
+
 
 def boxplot_num(dataset, features=None):
     """
@@ -244,3 +248,66 @@ def optimal_config_count(data, feature_columns, comparison_column, outcome, opti
         optimal_counts[optimal_level] += 1
     
     return optimal_counts
+
+def removal_box_plot(df, column, threshold=1.5):
+    """
+    Creates a box plot for a specified column in the DataFrame, highlighting the outliers, 
+    and then removes the outliers based on the IQR method and displays the box plot without outliers.
+    
+    Parameters:
+    df (pd.DataFrame): The DataFrame containing the data.
+    column (str): The column name for which the box plot is to be created.
+    threshold (float): The IQR multiplier to define outliers (default is 1.5).
+    
+    Returns:
+    pd.DataFrame: A DataFrame with outliers removed.
+    """
+    sns.boxplot(df[column])
+    plt.title(f'Original Box Plot of {column}')
+    plt.show()
+ 
+    Q1 = df[column].quantile(0.25)
+    Q3 = df[column].quantile(0.75)
+    IQR = Q3 - Q1
+
+    upper_limit = Q3 + threshold * IQR
+    lower_limit = Q1 - threshold * IQR
+    
+    removed_outliers = df[(df[column] >= lower_limit) & (df[column] <= upper_limit)]
+
+    sns.boxplot(removed_outliers[column])
+    plt.title(f'Box Plot without Outliers of {column}')
+    plt.show()
+    
+    return removed_outliers
+
+
+def normality_check(variable):
+    """
+    Checks the normality of a given variable by creating a histogram with KDE, 
+    fitting a normal distribution, and displaying a Q-Q plot.
+    
+    Parameters:
+    variable (pd.Series): The data to check for normality.
+    
+    """
+    mu, std = norm.fit(variable) 
+
+    fig, ax = plt.subplots(ncols=2, figsize=(12, 6))
+
+    sns.histplot(variable, kde=True, stat='density', ax=ax[0])
+    
+    xmin, xmax = ax[0].get_xlim()
+    x = np.linspace(xmin, xmax, 100)
+    p = norm.pdf(x, mu, std)
+    
+    ax[0].plot(x, p, 'r', linewidth=2, label='Normal fit')
+    ax[0].legend()
+
+    probplot(variable, dist="norm", plot=ax[1])
+    
+    ax[0].set_title('Histogram and Normal Distribution Fit')
+    ax[1].set_title('Q-Q Plot')
+
+    plt.tight_layout()
+    plt.show()
