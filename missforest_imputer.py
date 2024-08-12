@@ -1,46 +1,9 @@
-"""
-missforest_imputer.py
-
-This module implements the MissForest algorithm for handling missing data
-by iteratively imputing missing values using XGBoost models. The module is 
-designed to work with datasets containing both numerical and categorical data.
-
-Classes:
---------
-MissForestImputer: 
-    A class for imputing missing data using an iterative approach with 
-    XGBoost models.
-
-Functions:
-----------
-None
-
-Dependencies:
--------------
-- xgboost
-- scikit-learn
-- numpy
-- pandas
-- tqdm
-
-Author:
--------
-Benjamin Jargow (and ChatGPT)
-
-Date:
------
-August 12, 2024
-
-Version:
---------
-1.0.0
-"""
-
 from xgboost import XGBClassifier, XGBRegressor
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, LabelEncoder
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 from tqdm import tqdm
 
 # Define the ColumnTransformer and LabelEncoder
@@ -49,10 +12,8 @@ column_trans = ColumnTransformer(
         ('num', MinMaxScaler(), lambda df: df.select_dtypes(include=[np.number]).columns),
         ('cat', OneHotEncoder(), lambda df: df.select_dtypes(include=['object', 'category']).columns)
     ],
-    remainder='drop',
-    sparse_threshold=0
+    remainder='drop'
 )
-
 enc = LabelEncoder()
 
 class MissForestImputer:
@@ -68,20 +29,19 @@ class MissForestImputer:
 
     random_state : int or None, optional (default=None)
         Controls the randomness of the imputer.
+    
+    n_jobs : int, optional (default=-1)
+        The number of parallel jobs to run for model fitting. -1 means using all processors.
 
-    Methods:
-    -------
-    fit_transform(X, convergence_criterium=1e-5):
-        Fits the MissForest imputer on the data and returns the imputed dataset.
+    use_gpu : bool, optional (default=False)
+        Whether to use GPU for XGBoost model training. Requires a compatible GPU and the correct version of XGBoost.
     """
 
-    def __init__(self, max_iter=10, random_state=None):
-        """
-        Initializes the MissForestImputer with the specified maximum number 
-        of iterations and random state.
-        """
+    def __init__(self, max_iter=10, random_state=None, n_jobs=-1, use_gpu=False):
         self.max_iter = max_iter
         self.random_state = random_state
+        self.n_jobs = n_jobs
+        self.use_gpu = use_gpu
 
     def _initialize(self, X):
         """
@@ -106,6 +66,48 @@ class MissForestImputer:
                 else:
                     X_filled[col] = X_filled[col].fillna(X[col].mode()[0])
         return X_filled
+
+    def _impute_column(self, X_filled, missing_mask, col):
+        """
+        Impute a single column in the DataFrame.
+
+        Parameters:
+        ----------
+        X_filled : pd.DataFrame
+            The DataFrame with imputed values so far.
+
+        missing_mask : pd.DataFrame
+            Boolean DataFrame indicating the missing values.
+
+        col : str
+            The column to be imputed.
+        """
+        missing_idx = missing_mask[col]
+        if missing_idx.any():
+            # Define features and target
+            y_train = X_filled.loc[~missing_idx, col].copy()
+
+            # Ensure no NaN values in y_train
+            if y_train.isnull().any():
+                raise ValueError(f"NaN values found in y_train for column: {col}")
+
+            # Drop the column for model training
+            X_temp = X_filled.drop(columns=[col])
+            X_between = column_trans.fit_transform(X_temp)
+            X_train = X_between[~missing_idx]
+            X_missing = X_between[missing_idx]
+
+            # Fit the Random Forest
+            if pd.api.types.is_numeric_dtype(X_filled[col]):
+                rf = XGBRegressor(tree_method='hist', device='cuda') if self.use_gpu else XGBRegressor(tree_method='hist')
+            else:
+                y_train = enc.fit_transform(y_train)
+                rf = XGBClassifier(tree_method='hist', device='cuda') if self.use_gpu else XGBClassifier(tree_method='hist')
+
+            rf.fit(X_train, y_train)
+            y_pred = rf.predict(X_missing)
+            y_pred = enc.inverse_transform(y_pred) if not pd.api.types.is_numeric_dtype(X_filled[col]) else y_pred
+            X_filled.loc[missing_idx, col] = y_pred
 
     def fit_transform(self, X, convergence_criterium=1e-5):
         """
@@ -134,33 +136,10 @@ class MissForestImputer:
         
         for iteration in range(self.max_iter):
             print('Iteration: ', iteration + 1)
-            for col in tqdm(X.columns):
-                missing_idx = missing_mask[col]
-                if missing_idx.any():
-                    # Define features and target
-                    y_train = X_filled.loc[~missing_idx, col].copy()
-
-                    # Ensure no NaN values in y_train
-                    if y_train.isnull().any():
-                        raise ValueError(f"NaN values found in y_train for column: {col}")
-
-                    # Drop the column for model training
-                    X_temp = X_filled.drop(columns=[col])
-                    X_between = column_trans.fit_transform(X_temp)
-                    X_train = X_between[~missing_idx]
-                    X_missing = X_between[missing_idx]
-
-                    # Fit the Random Forest
-                    if pd.api.types.is_numeric_dtype(X[col]):
-                        rf = XGBRegressor()
-                    else:
-                        y_train = enc.fit_transform(y_train)
-                        rf = XGBClassifier()
-
-                    rf.fit(X_train, y_train)
-                    y_pred = rf.predict(X_missing)
-                    y_pred = enc.inverse_transform(y_pred) if not pd.api.types.is_numeric_dtype(X[col]) else y_pred
-                    X_filled.loc[missing_idx, col] = y_pred
+            
+            Parallel(n_jobs=self.n_jobs)(
+                delayed(self._impute_column)(X_filled, missing_mask, col) for col in tqdm(X.columns)
+            )
 
             # Calculate differences
             X_filled_transformed = column_trans.fit_transform(X_filled)
