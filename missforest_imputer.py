@@ -93,7 +93,7 @@ class MissForestImputer:
 
             # Drop the column for model training
             X_temp = X_filled.drop(columns=[col])
-            X_between = column_trans.fit_transform(X_temp)
+            %time X_between = column_trans.fit_transform(X_temp)
             X_train = X_between[~missing_idx]
             X_missing = X_between[missing_idx]
 
@@ -104,7 +104,7 @@ class MissForestImputer:
                 y_train = enc.fit_transform(y_train)
                 rf = XGBClassifier(tree_method='hist', device='cuda') if self.use_gpu else XGBClassifier(tree_method='hist')
 
-            rf.fit(X_train, y_train)
+            %time rf.fit(X_train, y_train)
             y_pred = rf.predict(X_missing)
             y_pred = enc.inverse_transform(y_pred) if not pd.api.types.is_numeric_dtype(X_filled[col]) else y_pred
             X_filled.loc[missing_idx, col] = y_pred
