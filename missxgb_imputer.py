@@ -20,6 +20,8 @@ try:
 except:
     print('Please install cupy to enable GPU support')
 
+warnings.filterwarnings("ignore")
+
 class MissXGBImputer:
     """
     MissXGBImputer is a class for imputing missing data in a DataFrame using XGBoost.
