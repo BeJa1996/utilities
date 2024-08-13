@@ -159,7 +159,9 @@ class MissXGBImputer:
 
             rf.fit(X_train, y_train)
             y_pred = rf.predict(X_missing)
-            y_pred = self.enc.inverse_transform(cp.asnumpy(y_pred)) if not pd.api.types.is_numeric_dtype(X_filled[col]) else y_pred
+            y_pred = cp.asnumpy(y_pred) if self.use_gpu else y_pred
+            
+            y_pred = self.enc.inverse_transform(y_pred) if not pd.api.types.is_numeric_dtype(X_filled[col]) else y_pred
             X_filled.loc[missing_idx, col] = y_pred
 
     def fit_transform(self, X):
