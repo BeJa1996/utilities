@@ -64,11 +64,10 @@ class MissXGBImputer:
         self.col_index_mapping = dict()
 
         # Initialize the ColumnTransformer and LabelEncoder
-        one_hot_encoder = OneHotEncoder(sparse_output=False)
         self.column_trans = ColumnTransformer(
             transformers=[
                 ('num', MinMaxScaler(), selector(dtype_exclude=["object"])),
-                ('cat', one_hot_encoder, selector(dtype_include=["object"]))
+                ('cat', OneHotEncoder(), selector(dtype_include=["object"]))
             ],
             remainder='drop',
             sparse_threshold=0
