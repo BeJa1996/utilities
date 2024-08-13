@@ -154,11 +154,11 @@ class MissXGBImputer:
             if pd.api.types.is_numeric_dtype(X_filled[col]):
                 y_train = y_train.to_numpy()
                 y_train = cp.array(y_train) if self.use_gpu else y_train
-                rf = XGBRegressor(tree_method='hist', device='cuda') if self.use_gpu else XGBRegressor(tree_method='hist')
+                rf = XGBRegressor(tree_method='gpu_hist', device='cuda') if self.use_gpu else XGBRegressor(tree_method='hist')
             else:
                 y_train = self.enc.fit_transform(y_train)
                 y_train = cp.array(y_train) if self.use_gpu else y_train
-                rf = XGBClassifier(tree_method='hist', device='cuda') if self.use_gpu else XGBClassifier(tree_method='hist')
+                rf = XGBClassifier(tree_method='gpu_hist', device='cuda') if self.use_gpu else XGBClassifier(tree_method='hist')
 
             rf.fit(X_train, y_train)
             y_pred = rf.predict(X_missing)
