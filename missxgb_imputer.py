@@ -20,6 +20,7 @@ try:
 except:
     print('Please install cupy to enable GPU support')
 
+import warnings
 warnings.filterwarnings("ignore")
 
 class MissXGBImputer:
