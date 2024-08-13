@@ -15,7 +15,10 @@ from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, LabelEncoder
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-import cupy as cp
+try:
+    import cupy as cp
+except:
+    print('Please install cupy to enable GPU support')
 
 class MissXGBImputer:
     """
