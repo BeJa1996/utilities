@@ -188,13 +188,10 @@ class MissXGBImputer:
 
         for iteration in range(self.max_iter):
             print('Iteration: ', iteration + 1)
-            iteration_start_time = time.time()
-
+            
             # Impute each column
             for col in tqdm(X.columns):
                 self._impute_column(X_filled, transformed_X, missing_mask, col)
-
-            print(f"Iteration {iteration + 1} took {time.time() - iteration_start_time:.2f} seconds")
 
             # Re-transform the dataset at the end of the iteration
             transformed_X = self.column_trans.transform(X_filled)
