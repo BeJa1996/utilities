@@ -151,11 +151,11 @@ def corrdot(*args, **kwargs): # adapted from https://stackoverflow.com/a/5069072
         ax.annotate(corr_text, [.5, .5,],  xycoords="axes fraction",
                     ha='center', va='center', fontsize=font_size)
     
-    g = sns.PairGrid(dataset, diag_sharey=False, aspect=1.4)
-    g.map_lower(sns.regplot, lowess=True, 
-                    line_kws=dict(color="black"), marker=".", ci=None)
-    g.map_diag(sns.histplot, kde=True, alpha=1)
-    g.map_upper(corrdot)
+        g = sns.PairGrid(dataset, diag_sharey=False, aspect=1.4)
+        g.map_lower(sns.regplot, lowess=True, 
+                        line_kws=dict(color="black"), marker=".", ci=None)
+        g.map_diag(sns.histplot, kde=True, alpha=1)
+        g.map_upper(corrdot)
 
 def boxplot_cat(dataset, y, features=None):
     """
