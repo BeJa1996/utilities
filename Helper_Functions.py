@@ -303,6 +303,15 @@ def normality_check(variable):
     
     ax[0].plot(x, p, 'r', linewidth=2, label='Normal fit')
     ax[0].legend()
+    
+    probplot(variable, dist="norm", plot=ax[1])
+    
+    ax[0].set_title('Histogram and Normal Distribution Fit')
+    ax[1].set_title('Q-Q Plot')
+
+    plt.tight_layout()
+    plt.show()
+
 
 def groupings(dataset, by, target=None, 
               method=['count', 'sum', 'mean'],
@@ -360,13 +369,4 @@ def groupings(dataset, by, target=None,
                          fontsize=8, ha='left')
     
     # Return the grouped and aggregated data
-    return grouped
-
-
-    probplot(variable, dist="norm", plot=ax[1])
-    
-    ax[0].set_title('Histogram and Normal Distribution Fit')
-    ax[1].set_title('Q-Q Plot')
-
-    plt.tight_layout()
-    plt.show()
+    return grouped 
