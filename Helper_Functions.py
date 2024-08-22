@@ -138,7 +138,8 @@ def pair_plot(dataset, features=None):
     
     dataset = dataset[features]
         
-    def corrdot(*args, **kwargs): # adapted from https://stackoverflow.com/a/50690729
+    
+def corrdot(*args, **kwargs): # adapted from https://stackoverflow.com/a/50690729
         corr_r = args[0].corr(args[1], 'pearson')
         corr_text = f"{corr_r:2.2f}".replace("0.", ".")
         ax = plt.gca()
