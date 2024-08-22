@@ -13,7 +13,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-def groupings(dataset, by, target=None, method=['count', 'sum', 'mean'], plot=True, ax=None):
+def groupings(dataset, by, target=None, method=['count', 'sum', 'mean'], 
+              plot=True, ax=None, x_label = None):
     """
     Groups the dataset by the specified columns and applies the desired aggregation method. 
     Optionally plots the results as a bar chart.
@@ -42,15 +43,15 @@ def groupings(dataset, by, target=None, method=['count', 'sum', 'mean'], plot=Tr
     target = feature if target is None else target
     
     # Group the dataset by the specified column(s) and target column
-    grouped = dataset.groupby(by, dropna=False)[target]
+    grouped_base = dataset.groupby(by, dropna=False)[target]
     
     # Apply the specified aggregation method
     if method == 'sum':
-        grouped = grouped.sum()
+        grouped = grouped_base.sum()
     elif method == 'mean':
-        grouped = grouped.mean() * 100  # Multiplying by 100, likely for percentage calculation
+        grouped = grouped_base.mean() * 100  # Multiplying by 100, likely for percentage calculation
     else:
-        grouped = grouped.count()
+        grouped = grouped_base.count()
     
     # Sort the results in descending order
     grouped = grouped.sort_values(ascending=False)
@@ -65,10 +66,17 @@ def groupings(dataset, by, target=None, method=['count', 'sum', 'mean'], plot=Tr
             fig.annotate(str(round(p.get_height())), 
                          (p.get_x(), p.get_height() + max_height * 0.01), 
                          fontsize=8, ha='left')
+    if method == 'mean':
+        fig2 = fig.twinx()
+        grouped_base.count().plot.line(ax = fig2, color = 'black')
     
+    fig.set_ylabel('Percentage')
+    fig2.set_ylabel('Count of Category')
+    if x_label is not None:
+        fig.set_xlabel(x_label)
+        
     # Return the grouped and aggregated data
-    return grouped 
-
+    return grouped
 
 def boxplot_num(dataset, features=None):
     """
