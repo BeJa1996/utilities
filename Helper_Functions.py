@@ -68,7 +68,8 @@ def groupings(dataset, by, target=None, method=['count', 'sum', 'mean'],
                          fontsize=8, ha='left')
     if method == 'mean':
         fig2 = fig.twinx()
-        grouped_base.count().plot.line(ax = fig2, color = 'black')
+        count_sorted = grouped_base.count().reindex(grouped.index)
+        count_sorted.plot.line(ax = fig2, color = 'black')
     
     fig.set_ylabel('Percentage')
     fig2.set_ylabel('Count of Category')
