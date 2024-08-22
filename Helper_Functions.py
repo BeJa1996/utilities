@@ -358,9 +358,6 @@ def groupings(dataset, by, target=None,
             fig.annotate(str(round(p.get_height())), 
                          (p.get_x(), p.get_height() + max_height * 0.01), 
                          fontsize=8, ha='left')
-    else:
-        # If not plotting, print the grouped data
-        print(grouped)
     
     # Return the grouped and aggregated data
     return grouped
