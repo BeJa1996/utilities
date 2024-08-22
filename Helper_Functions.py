@@ -41,8 +41,8 @@ def groupings(dataset, by, target=None, method=['count', 'sum', 'mean'],
         The grouped and aggregated data.
     """
     
-    # Use 'feature' as target if none is provided
-    target = feature if target is None else target
+    # Use 'by' as target if none is provided
+    target = by if target is None else target
     
     # Group the dataset by the specified column(s) and target column
     grouped_base = dataset.groupby(by, dropna=False)[target]
