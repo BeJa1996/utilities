@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 
 def groupings(dataset, by, target=None, method=['count', 'sum', 'mean'], 
-              plot=True, ax=None, x_label = None):
+             sort = True, plot=True, ax=None, x_label = None):
     """
     Groups the dataset by the specified columns and applies the desired aggregation method. 
     Optionally plots the results as a bar chart.
@@ -29,6 +29,8 @@ def groupings(dataset, by, target=None, method=['count', 'sum', 'mean'],
     - method: list of str, optional
         The aggregation method(s) to apply. Possible values are 'count', 'sum', and 'mean'. 
         Default is ['count', 'sum', 'mean'].
+    - sort: bool, optional
+        Whether to sort according to size (descending). Default is True
     - plot: bool, optional
         Whether to plot the results as a bar chart. Default is True.
     - ax: matplotlib axis, optional
@@ -54,7 +56,8 @@ def groupings(dataset, by, target=None, method=['count', 'sum', 'mean'],
         grouped = grouped_base.count()
     
     # Sort the results in descending order
-    grouped = grouped.sort_values(ascending=False)
+    if sort:
+        grouped = grouped.sort_values(ascending=False)
     
     # Plot the results as a bar chart if 'plot' is True
     if plot:
@@ -66,15 +69,15 @@ def groupings(dataset, by, target=None, method=['count', 'sum', 'mean'],
             fig.annotate(str(round(p.get_height())), 
                          (p.get_x(), p.get_height() + max_height * 0.01), 
                          fontsize=8, ha='left')
-    if method == 'mean':
-        fig2 = fig.twinx()
-        count_sorted = grouped_base.count().reindex(grouped.index)
-        count_sorted.plot.line(ax = fig2, color = 'black')
-    
-    fig.set_ylabel('Percentage')
-    fig2.set_ylabel('Count of Category')
-    if x_label is not None:
-        fig.set_xlabel(x_label)
+        if method == 'mean':
+            fig2 = fig.twinx()
+            count_sorted = grouped_base.count().reindex(grouped.index)
+            count_sorted.plot.line(ax = fig2, color = 'black')
+
+        fig.set_ylabel('Percentage')
+        fig2.set_ylabel('Count of Category')
+        if x_label is not None:
+            fig.set_xlabel(x_label)
         
     # Return the grouped and aggregated data
     return grouped
