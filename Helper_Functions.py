@@ -13,6 +13,63 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
+def groupings(dataset, by, target=None, method=['count', 'sum', 'mean'], plot=True, ax=None):
+    """
+    Groups the dataset by the specified columns and applies the desired aggregation method. 
+    Optionally plots the results as a bar chart.
+
+    Parameters:
+    - dataset: pandas DataFrame
+        The dataset to group.
+    - by: str or list of str
+        The column(s) to group by.
+    - target: str, optional
+        The target column for aggregation. If None, it defaults to 'feature'.
+    - method: list of str, optional
+        The aggregation method(s) to apply. Possible values are 'count', 'sum', and 'mean'. 
+        Default is ['count', 'sum', 'mean'].
+    - plot: bool, optional
+        Whether to plot the results as a bar chart. Default is True.
+    - ax: matplotlib axis, optional
+        The axis to plot on. If None, a new figure is created.
+
+    Returns:
+    - grouped: pandas Series
+        The grouped and aggregated data.
+    """
+    
+    # Use 'feature' as target if none is provided
+    target = feature if target is None else target
+    
+    # Group the dataset by the specified column(s) and target column
+    grouped = dataset.groupby(by, dropna=False)[target]
+    
+    # Apply the specified aggregation method
+    if method == 'sum':
+        grouped = grouped.sum()
+    elif method == 'mean':
+        grouped = grouped.mean() * 100  # Multiplying by 100, likely for percentage calculation
+    else:
+        grouped = grouped.count()
+    
+    # Sort the results in descending order
+    grouped = grouped.sort_values(ascending=False)
+    
+    # Plot the results as a bar chart if 'plot' is True
+    if plot:
+        max_height = max(grouped)
+        fig = grouped.plot.bar(color=plt.cm.Paired(np.arange(len(grouped))),
+                               ax=ax)
+        # Annotate each bar with its height value
+        for p in fig.patches:
+            fig.annotate(str(round(p.get_height())), 
+                         (p.get_x(), p.get_height() + max_height * 0.01), 
+                         fontsize=8, ha='left')
+    
+    # Return the grouped and aggregated data
+    return grouped 
+
+
 def boxplot_num(dataset, features=None):
     """
     Provides a boxplot for each numerical feature in the dataset.
@@ -312,62 +369,3 @@ def normality_check(variable):
 
     plt.tight_layout()
     plt.show()
-
-
-def groupings(dataset, by, target=None, 
-              method=['count', 'sum', 'mean'],
-              plot=True, ax=None):
-    """
-    Groups the dataset by the specified columns and applies the desired aggregation method. 
-    Optionally plots the results as a bar chart.
-
-    Parameters:
-    - dataset: pandas DataFrame
-        The dataset to group.
-    - by: str or list of str
-        The column(s) to group by.
-    - target: str, optional
-        The target column for aggregation. If None, it defaults to 'feature'.
-    - method: list of str, optional
-        The aggregation method(s) to apply. Possible values are 'count', 'sum', and 'mean'. 
-        Default is ['count', 'sum', 'mean'].
-    - plot: bool, optional
-        Whether to plot the results as a bar chart. Default is True.
-    - ax: matplotlib axis, optional
-        The axis to plot on. If None, a new figure is created.
-
-    Returns:
-    - grouped: pandas Series
-        The grouped and aggregated data.
-    """
-    
-    # Use 'feature' as target if none is provided
-    target = feature if target is None else target
-    
-    # Group the dataset by the specified column(s) and target column
-    grouped = dataset.groupby(by, dropna=False)[target]
-    
-    # Apply the specified aggregation method
-    if method == 'sum':
-        grouped = grouped.sum()
-    elif method == 'mean':
-        grouped = grouped.mean() * 100  # Multiplying by 100, likely for percentage calculation
-    else:
-        grouped = grouped.count()
-    
-    # Sort the results in descending order
-    grouped = grouped.sort_values(ascending=False)
-    
-    # Plot the results as a bar chart if 'plot' is True
-    if plot:
-        max_height = max(grouped)
-        fig = grouped.plot.bar(color=plt.cm.Paired(np.arange(len(grouped))),
-                               ax=ax)
-        # Annotate each bar with its height value
-        for p in fig.patches:
-            fig.annotate(str(round(p.get_height())), 
-                         (p.get_x(), p.get_height() + max_height * 0.01), 
-                         fontsize=8, ha='left')
-    
-    # Return the grouped and aggregated data
-    return grouped 
