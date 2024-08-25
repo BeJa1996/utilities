@@ -12,6 +12,86 @@ from scipy.stats import probplot, norm
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+import pandas as pd
+
+def check_index_corruption_and_missing_rows(df):
+    """
+    Checks a DataFrame for various index-related issues, including corrupted indices 
+    and missing rows. Specifically, the function checks for:
+
+    1. **Duplicated Indices:** If the index contains duplicated values.
+    2. **Missing Values in Index:** If there are any missing (NaN) values in the index.
+    3. **Non-Unique Index:** If the index is not unique.
+    4. **Mixed Data Types in Index:** If the index contains mixed data types, which could indicate corruption.
+    5. **Missing Rows Based on Expected Continuous Index:**
+       - For integer-based indices, the function checks if there are any missing values within the expected range.
+       - For datetime-based indices, the function checks for any missing dates within the expected range.
+       - If the index is of another type, the function will not check for missing rows.
+
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        The DataFrame whose index is to be checked.
+
+    Returns:
+    --------
+    None
+        The function prints out any detected issues with the index. If no issues are found, it confirms that the index appears to be fine.
+
+    Examples:
+    ---------
+    >>> df = pd.DataFrame({'data': [1, 2, 3, 5, 6]}, index=[0, 1, 2, 4, 5])
+    >>> check_index_corruption_and_missing_rows(df)
+    Missing indices found: [3]
+
+    >>> df2 = pd.DataFrame({'data': [1, 2, 3, 4, 5]}, index=[0, 1, 2, 3, 3])
+    >>> check_index_corruption_and_missing_rows(df2)
+    Corrupted Index: The dataset has duplicated indices.
+    Corrupted Index: The dataset index is not unique.
+    
+    >>> df3 = pd.DataFrame({'data': [1, 2, 3, 5, 6]}, index=[pd.Timestamp('2020-01-01'), pd.Timestamp('2020-01-02'), 
+                                                             pd.Timestamp('2020-01-03'), pd.Timestamp('2020-01-05'),
+                                                             pd.Timestamp('2020-01-06')])
+    >>> check_index_corruption_and_missing_rows(df3)
+    Missing indices found: [Timestamp('2020-01-04 00:00:00')]
+    """
+    issues = []
+
+    # Check for duplicated indices
+    if df.index.duplicated().any():
+        issues.append("Corrupted Index: The dataset has duplicated indices.")
+    
+    # Check for missing values in the index
+    if df.index.isnull().any():
+        issues.append("Corrupted Index: The dataset has missing values in the index.")
+    
+    # Check for non-unique index
+    if not df.index.is_unique:
+        issues.append("Corrupted Index: The dataset index is not unique.")
+    
+    # Check for mixed data types in the index
+    if df.index.inferred_type == 'mixed':
+        issues.append("Corrupted Index: The dataset index has mixed data types.")
+    
+    # Check for missing rows in the index (assuming a continuous range is expected)
+    if pd.api.types.is_integer_dtype(df.index):
+        expected_index = pd.RangeIndex(start=df.index.min(), stop=df.index.max() + 1)
+    elif pd.api.types.is_datetime64_any_dtype(df.index):
+        expected_index = pd.date_range(start=df.index.min(), end=df.index.max(), freq='D')
+    else:
+        expected_index = None
+    
+    if expected_index is not None:
+        missing_indices = expected_index.difference(df.index)
+        if not missing_indices.empty:
+            issues.append(f"Missing indices found: {missing_indices.tolist()}")
+    
+    # If no issues found
+    if not issues:
+        print("The dataset index seems to be fine.")
+    else:
+        for issue in issues:
+            print(issue)
 
 def groupings(dataset, by, target=None, method=['count', 'sum', 'mean'], 
              sort = True, plot=True, ax=None, x_label = None):
