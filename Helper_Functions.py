@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 import pandas as pd
 
-def check_index_corruption_and_missing_rows(df):
+def check_index_corruption(df):
     """
     Checks a DataFrame for various index-related issues, including corrupted indices 
     and missing rows. Specifically, the function checks for:
