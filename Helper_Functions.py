@@ -8,11 +8,14 @@ Last Edited: 22.07.2024
 import numpy as np
 import pandas as pd
 from scipy.stats import probplot, norm
-
 import seaborn as sns
 import matplotlib.pyplot as plt
-
 import pandas as pd
+
+import warnings
+warnings.filterwarnings("ignore", "is_categorical_dtype")
+warnings.filterwarnings("ignore", "use_inf_as_na")
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 def _append_issue(issues, label, description, count, values):
     """
