@@ -14,84 +14,149 @@ import matplotlib.pyplot as plt
 
 import pandas as pd
 
-def check_index_corruption(df):
+def _append_issue(issues, label, description, count, values):
     """
-    Checks a DataFrame for various index-related issues, including corrupted indices 
-    and missing rows. Specifically, the function checks for:
+    Helper function to append issues to the list.
+    
+    Parameters:
+    -----------
+    issues : list
+        The list to which issues are appended.
+    
+    label : str
+        The label for the index or column being checked.
+    
+    description : str
+        The description of the issue.
+    
+    count : int
+        The number of instances found.
+    
+    values : list
+        The values or instances to list.
+    
+    Returns:
+    --------
+    None
+    """
+    if count > 20:
+        issues.append(f"{description} {label}: {count} instances found.")
+        issues.append(f"Showing the first 20:\n{values[:20]}")
+    else:
+        issues.append(f"{description} {label}: {count} instances found.")
+        issues.append(f"Listing all:\n{values}")
 
-    1. **Duplicated Indices:** If the index contains duplicated values.
-    2. **Missing Values in Index:** If there are any missing (NaN) values in the index.
-    3. **Non-Unique Index:** If the index is not unique.
-    4. **Mixed Data Types in Index:** If the index contains mixed data types, which could indicate corruption.
-    5. **Missing Rows Based on Expected Continuous Index:**
-       - For integer-based indices, the function checks if there are any missing values within the expected range.
-       - For datetime-based indices, the function checks for any missing dates within the expected range.
-       - If the index is of another type, the function will not check for missing rows.
+def check_index(df, column=None):
+    """
+    Checks a DataFrame for various issues related to the index or a specified column. 
+    Specifically, the function checks for:
+
+    1. **Non-Unique Values:** If the index or column is not unique and lists duplicated values.
+    2. **Missing Values:** If there are any missing (NaN) values in the index or column.
+    3. **Mixed Data Types:** If the index or column contains mixed data types, which could indicate corruption.
+    4. **Missing Rows (For Continuous Sequences):**
+       - For integer-based sequences, the function checks if there are any missing values within the expected range.
+       - For datetime-based sequences, the function checks for any missing dates within the expected range.
+       - If the index or column is of another type, the function will not check for missing rows.
 
     Parameters:
     -----------
     df : pandas.DataFrame
-        The DataFrame whose index is to be checked.
+        The DataFrame whose index or column is to be checked.
+    
+    column : str, optional
+        The name of the column to check instead of the index. If not provided, the index will be checked.
 
     Returns:
     --------
-    None
-        The function prints out any detected issues with the index. If no issues are found, it confirms that the index appears to be fine.
+    dict
+        A dictionary with the results for duplicates, nulls, mixed data types, and missing rows.
 
     Examples:
     ---------
     >>> df = pd.DataFrame({'data': [1, 2, 3, 5, 6]}, index=[0, 1, 2, 4, 5])
-    >>> check_index_corruption_and_missing_rows(df)
-    Missing indices found: [3]
+    >>> check_index(df)
+    The index seems to be fine.
 
-    >>> df2 = pd.DataFrame({'data': [1, 2, 3, 4, 5]}, index=[0, 1, 2, 3, 3])
-    >>> check_index_corruption_and_missing_rows(df2)
-    Corrupted Index: The dataset has duplicated indices.
-    Corrupted Index: The dataset index is not unique.
-    
-    >>> df3 = pd.DataFrame({'data': [1, 2, 3, 5, 6]}, index=[pd.Timestamp('2020-01-01'), pd.Timestamp('2020-01-02'), 
-                                                             pd.Timestamp('2020-01-03'), pd.Timestamp('2020-01-05'),
-                                                             pd.Timestamp('2020-01-06')])
-    >>> check_index_corruption_and_missing_rows(df3)
-    Missing indices found: [Timestamp('2020-01-04 00:00:00')]
+    >>> df2 = pd.DataFrame({'order_id': [1, 2, 3, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 7, 8, 8, 9, 9, 9, 10, 10, 10, 10], 
+                            'data': range(23)})
+    >>> check_index(df2, column='order_id')
+    Non-Unique Column: The column is not unique.
+    Duplicated values: 6 instances found.
+    Showing the first 6:
+    [4, 5, 6, 8, 9, 10]
+
+    >>> df3 = pd.DataFrame({'order_date': [pd.Timestamp('2020-01-01'), pd.Timestamp('2020-01-02'), 
+                                           pd.Timestamp('2020-01-03'), pd.Timestamp('2020-01-05'),
+                                           pd.Timestamp('2020-01-06')], 'data': [10, 20, 30, 40, 50]})
+    >>> check_index(df3, column='order_date')
+    Missing values found: 1 instance found.
+    [Timestamp('2020-01-04 00:00:00')]
     """
     issues = []
+    
+    duplicated_values = []
+    null_values = []
+    mixed_type_values = []
+    missing_values = []
 
-    # Check for duplicated indices
-    if df.index.duplicated().any():
-        issues.append("Corrupted Index: The dataset has duplicated indices.")
-    
-    # Check for missing values in the index
-    if df.index.isnull().any():
-        issues.append("Corrupted Index: The dataset has missing values in the index.")
-    
-    # Check for non-unique index
-    if not df.index.is_unique:
-        issues.append("Corrupted Index: The dataset index is not unique.")
-    
-    # Check for mixed data types in the index
-    if df.index.inferred_type == 'mixed':
-        issues.append("Corrupted Index: The dataset index has mixed data types.")
-    
-    # Check for missing rows in the index (assuming a continuous range is expected)
-    if pd.api.types.is_integer_dtype(df.index):
-        expected_index = pd.RangeIndex(start=df.index.min(), stop=df.index.max() + 1)
-    elif pd.api.types.is_datetime64_any_dtype(df.index):
-        expected_index = pd.date_range(start=df.index.min(), end=df.index.max(), freq='D')
+    # Select the index or specified column for checking
+    if column:
+        data = df[column]
+        label = "Column"
     else:
-        expected_index = None
+        data = df.index
+        label = "Index"
+
+    # Check for non-unique values
+    if not data.is_unique:
+        duplicated_values = data[data.duplicated()].unique()
+        _append_issue(issues, label, "Non-Unique", len(duplicated_values), duplicated_values.tolist())
+
+    # Check for missing values
+    if data.isnull().any():
+        null_values = data[data.isnull()].index.tolist()
+        _append_issue(issues, label, "Missing values in", len(null_values), null_values)
+
+    # Check for mixed data types
+    if column:
+        inferred_type = pd.api.types.infer_dtype(data, skipna=True)
+        if inferred_type == 'mixed':
+            mixed_type_values = data.apply(type).value_counts().index.tolist()
+            _append_issue(issues, label, "Mixed data types in", len(mixed_type_values), mixed_type_values)
+    else:
+        if data.inferred_type == 'mixed':
+            mixed_type_values = data.apply(type).value_counts().index.tolist()
+            _append_issue(issues, label, "Mixed data types in", len(mixed_type_values), mixed_type_values)
+
+    # Check for missing rows (assuming a continuous range is expected)
+    if pd.api.types.is_integer_dtype(data):
+        expected_range = pd.RangeIndex(start=data.min(), stop=data.max() + 1)
+    elif pd.api.types.is_datetime64_any_dtype(data):
+        expected_range = pd.date_range(start=data.min(), end=data.max(), freq='D')
+    else:
+        expected_range = None
     
-    if expected_index is not None:
-        missing_indices = expected_index.difference(df.index)
-        if not missing_indices.empty:
-            issues.append(f"Missing indices found: {missing_indices.tolist()}")
-    
+    if expected_range is not None:
+        missing_values = expected_range.difference(data)
+        if missing_values.size > 0:
+            _append_issue(issues, label, "Missing rows in", len(missing_values), missing_values.tolist())
+
     # If no issues found
     if not issues:
-        print("The dataset index seems to be fine.")
+        print(f"The {label.lower()} seems to be fine.")
     else:
         for issue in issues:
             print(issue)
+
+    results = {
+        'duplicates': duplicated_values,
+        'nulls': null_values,
+        'mixed': mixed_type_values,
+        'missing': missing_values.to_list()
+    }
+    
+    return results
 
 def groupings(dataset, by, target=None, method=['count', 'sum', 'mean'], 
              sort = True, plot=True, ax=None, x_label = None):
