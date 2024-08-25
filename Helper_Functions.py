@@ -319,7 +319,7 @@ def trends_num(dataset, x=None, features=None):
     plt.tight_layout()
     plt.show()
 
-def countplot_all(dataset, features=None):
+def countplot_cat(dataset, features=None):
     """
     Provides a count plot for all categorical features in the dataset.
     
