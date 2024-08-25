@@ -222,8 +222,8 @@ def groupings(dataset, by, target=None, method=['count', 'sum', 'mean'],
             count_sorted = grouped_base.count().reindex(grouped.index)
             count_sorted.plot.line(ax = fig2, color = 'black')
 
-        fig.set_ylabel('Percentage')
-        fig2.set_ylabel('Count of Category')
+            fig.set_ylabel('Percentage')
+            fig2.set_ylabel('Count of Category')
         if x_label is not None:
             fig.set_xlabel(x_label)
         
