@@ -270,7 +270,7 @@ def scatter_num(dataset, features=None):
         plt.ylabel('Count')
         plt.title(f"{feature}")
 
-def hist_numerical(dataset, features=None):
+def hist_num(dataset, features=None):
     """
     Provides a histogram and KDE plot for each numerical feature in the dataset.
     
@@ -292,7 +292,7 @@ def hist_numerical(dataset, features=None):
     plt.tight_layout()
     plt.show()
 
-def trends_numerical(dataset, x=None, features=None):
+def trends_num(dataset, x=None, features=None):
     """
     Provides a trend plot for each numerical feature in the dataset.
     
